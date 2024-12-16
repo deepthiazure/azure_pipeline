@@ -1,0 +1,56 @@
+name: AKS Deploy
+
+
+on:
+  workflow_dispatch:      
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  ARM_USE_OIDC: true
+
+jobs:
+  aks_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Azure login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+#        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+#        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+#        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+      
+    - name: Set up kubelogin for non-interactive login
+      uses: azure/use-kubelogin@v1
+      with:
+        kubelogin-version: v0.0.25
+    - name: Get K8s context
+      uses: azure/aks-set-context@v3
+      with:
+        admin: "false"
+        cluster-name: "cluster-tender-cockatoo"
+        resource-group: "rg-pleased-manatee"
+        use-kubelogin: "true"
+ 
+      # Deploy to k8s cluster
+    - name: Deploy to Kubernetes cluster
+      run: kubectl apply -f deploy-tomcat.yaml 
+      #uses: Azure/k8s-deploy@v1
+      #with:        
+        # Path to the manifest files which will be used for deployment.
+        #manifests: |
+          #./deploy-tomcat.yaml
+#          ./service.yml
+        # Fully qualified resource URL of the image(s) to be used for substitutions on the manifest files Example: contosodemo.azurecr.io/helloworld:test
+        #images: '${{secrets.DOCKER_HUB_USERNAME}}/azure_pipeline'
+        # Name of a docker-registry secret that has already been set up within the cluster. Each of these secret names are added under imagePullSecrets field for the workloads found in the input manifest files
+        #imagepullsecrets: docker-image-pull-secret
+        # deploy/promote/reject
+        #action: deploy
